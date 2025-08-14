@@ -1,0 +1,8 @@
+{
+  "name": "hc-ai-cdn",
+  "version": "1.0.0",
+  "dependencies": {
+    "mongodb": "^6.0.0",
+    "next": "^14.0.0"
+  }
+}
