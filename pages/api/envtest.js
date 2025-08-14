@@ -1,30 +1,22 @@
 // pages/api/envtest.js
-module.exports = (req, res) => {
+export default function handler(req, res) {
   const uri = process.env.MONGODB_URI || null;
   const db  = process.env.MONGODB_DB || null;
   const cdn = process.env.CDN_BASE_URL || null;
 
-  let uriInfo = null;
+  // 只返回“是否存在”，避免泄露敏感值
+  const have = {
+    MONGODB_URI: !!uri,
+    MONGODB_DB: !!db,
+    CDN_BASE_URL: !!cdn,
+  };
+
+  // 尝试从 URI 提取库名（不含用户名/密码）
+  let dbInUri = null;
   if (uri) {
-    const m = uri.match(/^mongodb(\+srv)?:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)?/i);
-    uriInfo = m ? {
-      hasSrv: !!m[1],
-      user: m[2],
-      passLen: m[3]?.length,
-      host: m[4],
-      dbInUri: m[5] || null
-    } : { parsed: false };
+    const m = uri.match(/^mongodb(\+srv)?:\/\/[^/]+\/([^?]+)?/i);
+    dbInUri = m && m[2] ? m[2] : null;
   }
 
-  res.status(200).json({
-    ok: true,
-    have: {
-      MONGODB_URI: !!uri,
-      MONGODB_DB: !!db,
-      CDN_BASE_URL: !!cdn
-    },
-    uriInfo,
-    dbEnv: db,
-    note: "如果 MONGODB_URI=false，则是生产环境变量没生效；需要到 Vercel 项目 Settings→Environment Variables(Production) 添加后 Redeploy。"
-  });
-};
+  res.status(200).json({ ok: true, have, dbEnv: db, dbInUri });
+}
