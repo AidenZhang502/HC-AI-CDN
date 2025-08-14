@@ -1,17 +1,38 @@
 // pages/api/dbcheck.js
-const { getDb } = require("../../lib/mongodb");
+const { MongoClient } = require("mongodb");
 
-module.exports = async function handler(req, res) {
+function getDbNameFromUri(uri) {
+  // 解析 mongodb(+srv)://.../<db>?...
+  const m = uri.match(/^mongodb(\+srv)?:\/\/[^/]+\/([^?]+)?/i);
+  return (m && m[2]) ? m[2] : null;
+}
+
+module.exports = async (req, res) => {
   try {
-    const db = await getDb();
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      return res.status(500).json({ ok: false, error: "MONGODB_URI not set" });
+    }
+
+    const envDb = process.env.MONGODB_DB || getDbNameFromUri(uri) || "mydb";
+    const client = new MongoClient(uri);
+    await client.connect();
+    const db = client.db(envDb);
+
     const cols = await db.listCollections().toArray();
-    res.status(200).json({
+    await client.close();
+
+    return res.status(200).json({
       ok: true,
-      db: db.databaseName,
-      collections: cols.slice(0, 5).map(c => c.name),
+      uriHasDb: !!getDbNameFromUri(uri),
+      db: envDb,
+      collections: cols.slice(0, 10).map(c => c.name),
     });
   } catch (e) {
-    console.error("dbcheck error:", e);
-    res.status(500).json({ ok: false, error: e?.message || "connect_fail" });
+    return res.status(500).json({
+      ok: false,
+      error: e?.message || String(e),
+      stack: e?.stack?.split("\n").slice(0, 3).join(" | ")
+    });
   }
 };
