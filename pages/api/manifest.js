@@ -4,13 +4,12 @@ const { getDb } = require("../../lib/mongodb");
 module.exports = async function handler(req, res) {
   try {
     const db = await getDb();
-    // 你的集合名是 fitness.exercises
-    const col = db.collection("exercises");
+    const col = db.collection("exercises"); // 你在 Atlas 中的集合名
 
     const { tag, key } = req.query || {};
     const filter = {};
-    if (tag) filter.tags = tag;   // /api/manifest?tag=prod
-    if (key) filter.key = key;    // /api/manifest?key=xxxx
+    if (tag) filter.tags = tag;
+    if (key) filter.key = key;
 
     const base = (process.env.CDN_BASE_URL || "").replace(/\/$/, "");
     const docs = await col.find(filter, { projection: { _id: 0 } }).toArray();
