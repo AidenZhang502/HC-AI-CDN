@@ -1,5 +1,5 @@
 // pages/api/dbcheck2.js
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const out = { ok: false, steps: [] };
 
   try {
@@ -10,8 +10,8 @@ module.exports = async (req, res) => {
     if (!uri) throw new Error("MONGODB_URI not set");
     out.steps.push("got_env");
 
-    // 把 require 放到 try 里面，这样任何模块加载错误都会被捕获并返回
-    const { MongoClient } = require("mongodb");
+    // 动态导入 mongodb 模块
+    const { MongoClient } = await import("mongodb");
     out.steps.push("required_mongodb");
 
     const client = new MongoClient(uri);
@@ -40,4 +40,4 @@ module.exports = async (req, res) => {
     out.code = e?.code;
     return res.status(500).json(out);
   }
-};
+}
